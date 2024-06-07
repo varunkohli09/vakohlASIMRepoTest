@@ -14,8 +14,6 @@ permissions:
 
 jobs: 
   runAsimTesters:
-      # The workflow should not run on forked repositories for security reasons
-      if: ${{ !github.event.pull_request.head.repo.fork }}
       runs-on: ubuntu-latest
       environment: staging
       steps:
