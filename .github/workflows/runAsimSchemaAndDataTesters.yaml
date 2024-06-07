@@ -2,7 +2,7 @@
 # The script runs ASIM Schema amd Data testers on the "eco-connector-test" workspace.
 name: Run ASIM testers on "eco-connector-test" workspace
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, reopened, synchronize, labeled]
 
   # Allows you to run this workflow manually from the Actions tab
@@ -15,7 +15,6 @@ permissions:
 jobs: 
   runAsimTesters:
       runs-on: ubuntu-latest
-      environment: staging
       steps:
       - name: Checkout pull request branch
         uses: actions/checkout@v3
