@@ -38,6 +38,11 @@ jobs:
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "<>"
+      - name: Testing new job log lines
+        run: |
+            echo "::group::My title"
+            echo "Inside group"
+            echo "::endgroup::"
       - name: Run Asim testers
         uses: azure/powershell@v1
         with:
