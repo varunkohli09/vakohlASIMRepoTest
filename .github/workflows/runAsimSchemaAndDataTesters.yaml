@@ -32,7 +32,7 @@ jobs:
         run: ls -la
 
       - name: List files in Script directory for debugging
-        run: ls -la .script/tests/asimParsersTest
+        run: ls -la .script/tests/asimParserTest
 
       - name: Login to Azure Public Cloud with AzPowershell
         uses: azure/login@v2
@@ -61,7 +61,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            & ".script/tests/asimParsersTest/runAsimTesters.ps1"
+            & ".script/tests/asimParserTest/runAsimTesters.ps1"
           azPSVersion: "latest"
           errorActionPreference: stop
           failOnStandardError: true
