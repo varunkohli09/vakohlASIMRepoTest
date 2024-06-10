@@ -52,6 +52,8 @@ jobs:
             git merge --abort
             exit 1
           fi
+      - name: List files for debugging
+        run: ls -R
       - name: Run Asim testers
         uses: azure/powershell@v1
         with:
