@@ -61,7 +61,7 @@ jobs:
         uses: azure/powershell@v1
         with:
           inlineScript: |
-            & "./Script/tests/asimParsersTest/runAsimTesters.ps1"
+            & "./script/tests/asimParsersTest/runAsimTesters.ps1"
           azPSVersion: "latest"
           errorActionPreference: stop
           failOnStandardError: true
