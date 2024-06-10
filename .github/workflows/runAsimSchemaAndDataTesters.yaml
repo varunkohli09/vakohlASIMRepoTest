@@ -18,7 +18,6 @@ permissions:
 jobs: 
   runAsimTesters:
       runs-on: ubuntu-latest
-      environment: staging
       steps:
       - name: Checkout pull request branch
         uses: actions/checkout@v3
