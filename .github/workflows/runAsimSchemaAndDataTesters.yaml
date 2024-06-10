@@ -43,6 +43,15 @@ jobs:
             echo "::group::My title"
             echo "Inside group"
             echo "::endgroup::"
+      - name: Merge master into pull request branch
+        run: |
+          git merge origin/main
+          Conflicts=$(git ls-files -u | wc -l)
+          if [ "$Conflicts" -gt 0 ] ; then
+            echo "There is a merge conflict. Aborting"
+            git merge --abort
+            exit 1
+          fi
       - name: Run Asim testers
         uses: azure/powershell@v1
         with:
