@@ -32,7 +32,7 @@ jobs:
         run: ls -la
 
       - name: List files in Script directory for debugging
-        run: ls -la ./script/tests/asimParsersTest
+        run: ls -la .script/tests/asimParsersTest
 
       - name: Login to Azure Public Cloud with AzPowershell
         uses: azure/login@v2
