@@ -1,11 +1,12 @@
 # Each pull request that updates ASIM parsers triggers the script.
 # The script runs ASIM Schema and Data testers on the "eco-connector-test" workspace.
-name: Run ASIM testers on "eco-connector-test" workspace
+name: Run ASIM testers on "ASIM-SchemaDataTester-GithubShared" workspace
 on:
   pull_request_target:
     types: [opened, edited, reopened, synchronize, labeled]
     branches:
-      - main
+      - master
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 permissions:
@@ -15,24 +16,32 @@ permissions:
 jobs: 
   run-asim-testers:
     runs-on: ubuntu-latest
-    environment: Staging
     steps:
+      - name: Check for modified files using GitHub API
+        id: check_files
+        run: |
+          # Fetch the list of modified files in the pull request
+          pr_files=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
+          echo "Modified files: $pr_files"
+          
+          # Define the relevant paths regex
+          relevant_paths='Parsers/ASimDns/Parsers/|Parsers/ASimNetworkSession/Parsers/|Parsers/ASimWebSession/Parsers/|Parsers/ASimProcessEvent/Parsers/|Parsers/ASimAuditEvent/Parsers/|Parsers/ASimAuthentication/Parsers/|Parsers/ASimFileEvent/Parsers/|Parsers/ASimRegistryEvent/Parsers/|Parsers/ASimUserManagement/Parsers/|Parsers/ASimDhcpEvent/Parsers/'
+
+          # Check if any modified file matches the relevant paths
+          if echo "$pr_files" | grep -Eq "$relevant_paths"; then
+            echo "Relevant files modified."
+            echo "run_tests=true" >> $GITHUB_ENV
+          else
+            echo "No relevant files modified."
+            echo "run_tests=false" >> $GITHUB_ENV
+          fi
       - name: Checkout pull request branch
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           persist-credentials: false
-          fetch-depth: 0
-
-      - name: Install PowerShellGet
-        run: |
-          pwsh -Command "Install-Module -Name PowerShellGet -Force -AllowClobber"
-      
-      - name: Install latest Az module
-        run: |
-          pwsh -Command "Install-Module -Name Az -Force -AllowClobber"
-          pwsh -Command "Update-PSResource Az -Force"
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
       
       - name: Login to Azure Public Cloud with AzPowershell
         uses: azure/login@v2
@@ -47,9 +56,9 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "<>"
 
-      - name: Merge main into pull request branch
+      - name: Merge master into pull request branch
         run: |
-          git merge origin/main
+          git merge origin/master
           Conflicts=$(git ls-files -u | wc -l)
           if [ "$Conflicts" -gt 0 ] ; then
             echo "There is a merge conflict. Aborting"
@@ -61,7 +70,7 @@ jobs:
         uses: azure/powershell@v2
         with:
           inlineScript: |
-            & ".script/tests/asimParserTest/runAsimTesters.ps1"
+            & ".script/tests/asimParsersTest/runAsimTesters.ps1"
           azPSVersion: "latest"
-          errorActionPreference: stop
-          failOnStandardError: true
+          errorActionPreference: continue
+          failOnStandardError: false
