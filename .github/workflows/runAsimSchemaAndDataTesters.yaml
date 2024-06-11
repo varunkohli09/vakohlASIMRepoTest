@@ -25,12 +25,10 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Setup PowerShell Core
-        uses: actions/setup-powershell@v2
-
       - name: Install latest Az module
         run: |
-          pwsh -command "Install-Module -Name Az -Force -AllowClobber"
+          pwsh -Command "Install-Module -Name Az -Force -AllowClobber"
+          pwsh -Command "Update-Module -Name Az -Force"
       
       - name: Login to Azure Public Cloud with AzPowershell
         uses: azure/login@v2
