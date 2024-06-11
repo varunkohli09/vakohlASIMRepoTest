@@ -25,10 +25,14 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Install PowerShellGet
+        run: |
+          pwsh -Command "Install-Module -Name PowerShellGet -Force -AllowClobber"
+      
       - name: Install latest Az module
         run: |
           pwsh -Command "Install-Module -Name Az -Force -AllowClobber"
-          pwsh -Command "Update-Module -Name Az -Force"
+          pwsh -Command "Update-PSResource Az -Force"
       
       - name: Login to Azure Public Cloud with AzPowershell
         uses: azure/login@v2
