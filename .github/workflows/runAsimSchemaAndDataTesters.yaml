@@ -17,8 +17,21 @@ jobs:
   run-asim-testers:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up GitHub CLI
+        run: |
+          # Add the GPG key for the GitHub CLI package repository
+          # The key is public and used to verify the authenticity of the repository
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+          # Add the GitHub CLI package repository
+          sudo apt-add-repository https://cli.github.com/packages
+          # Update the package list and install gh CLI
+          sudo apt update
+          sudo apt install gh -y
+
       - name: Check for modified files using GitHub API
         id: check_files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Fetch the list of modified files in the pull request
           pr_files=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
