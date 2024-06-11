@@ -55,6 +55,7 @@ jobs:
             echo "There is a merge conflict. Aborting"
             git merge --abort
             exit 1
+          fi
 
       - name: Run ASIM testers
         uses: azure/powershell@v2
