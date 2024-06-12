@@ -16,6 +16,7 @@ permissions:
 jobs: 
   run-asim-testers:
     runs-on: ubuntu-latest
+    environment: Staging
     steps:
       - name: Check for modified files using GitHub API
         id: check_files
