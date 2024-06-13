@@ -17,7 +17,7 @@ on:
     - 'Parsers/ASimUserManagement/Parsers/**'
     - 'Parsers/ASimDhcpEvent/Parsers/**'
     branches:
-      - master
+      - main
 
 jobs:
   run-ASim-FileValidation-tests:
