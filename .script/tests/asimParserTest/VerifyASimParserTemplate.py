@@ -32,6 +32,8 @@ def run():
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while executing the command: {e}")
     
+    print ("Printing Modified Files" + modified_files)
+    
     # Command to get the current commit number
     command = "git rev-parse HEAD"
     # Execute the command and store the result in a variable
