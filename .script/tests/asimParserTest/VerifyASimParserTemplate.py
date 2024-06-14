@@ -1,19 +1,15 @@
 import requests
 import yaml
 import re
+import os
+import subprocess
 from datetime import datetime
 from urllib.parse import urlparse
-import subprocess
 
-# Provide ASim parser filename
-#_ASimParserFileName = "ASimAuthenticationGithub"
-_ASimParserFileName = "ASimAuditEventGithubWebhook"
-#_ASimParserFileName = "ASimAuthenticationAuth0"
-_SchemaName = "AuditEvent"
-#_SchemaName = "Authentication"
-
-# Provide Commit number
-_CommitNumber = "20ad70075116ece323f4243e4c8a2299df486d18"
+#variables
+#SentinelRepoUrl = f'https://raw.githubusercontent.com/Azure/Azure-Sentinel'
+SentinelRepoUrl = 'https://raw.githubusercontent.com/vakohl/vakohlASIMRepoTest'
+SampleDataPath = '/Sample%20Data/ASIM/'
 
 # Global array to store results
 results = []
@@ -25,21 +21,52 @@ SchemaInfo = [
     # Add more schemas as needed
 ]
 
-url1 = f'https://raw.githubusercontent.com/Azure/Azure-Sentinel/{_CommitNumber}/Parsers/ASim{_SchemaName}/Parsers/{_ASimParserFileName}.yaml'
-url2 = f'https://raw.githubusercontent.com/Azure/Azure-Sentinel/{_CommitNumber}/Parsers/ASim{_SchemaName}/Parsers/ASim{_SchemaName}.yaml'
-ASIMSampleDataURL = f'https://raw.githubusercontent.com/Azure/Azure-Sentinel/{_CommitNumber}/Sample%20Data/ASIM/'
-
 def run():
     # Get modified ASIM Parser files along with their status
-    command = "git diff --name-status origin/main -- ./../../../Parsers/"
-    modified_files_status = subprocess.check_output(command, shell=True).decode()
+    current_directory = os.getcwd()
+    print(current_directory)
+    GetModifiedFiles = "git diff --name-only origin/main -- C:\\Users\\vakohl\\Documents\\TestToBeDeleted\\varunkohli09\\vakohlASIMRepoTest\\Parsers"
+    try:
+        modified_files = subprocess.check_output(GetModifiedFiles, shell=True).decode()
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing the command: {e}")
+    
+    # Command to get the current commit number
+    command = "git rev-parse HEAD"
+    # Execute the command and store the result in a variable
+    try:
+        commit_number = subprocess.check_output(command, shell=True, text=True).strip()
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing the command: {e}")
+
+    # Construct ASim Sample Data URL
+    ASIMSampleDataURL = f'{SentinelRepoUrl}/{commit_number}/{SampleDataPath}'
+
     # Split the output into lines
-    modified_files_status_lines = modified_files_status.split("\n")
-    for line in modified_files_status_lines:
+    modified_files_lines = modified_files.split("\n")
+    Parser_yaml_files = [line for line in modified_files_lines if line.split('/')[-1].startswith('ASim') and line.endswith('.yaml')]
+    for parser in Parser_yaml_files:
+        # Use regular expression to extract SchemaName from the parser filename
+        SchemaNameMatch = re.search(r'ASim(\w+)/', parser)
+        if SchemaNameMatch:
+            SchemaName = SchemaNameMatch.group(1)
+        else:
+            SchemaName = None
+        # Check if changed file is a union parser
+        if parser.endswith(f'ASim{SchemaName}.yaml'):
+            continue
+        # Construct the parser URL
+        ASimParserUrl = f'{SentinelRepoUrl}/{commit_number}/{parser}'
+        # Construct union parser URL
+        ASimUnionParserURL = f'{SentinelRepoUrl}/{commit_number}/Parsers/ASim{SchemaName}/Parsers/ASim{SchemaName}.yaml'
         print("***********************************")
         print("Performing tests for ASim Parser")
         print("***********************************")
-        extract_and_check_properties(yaml_file1, yaml_file2,"ASim")
+
+        ASimParser = read_github_yaml(ASimParserUrl)
+        ASimUnionParser = read_github_yaml(ASimUnionParserURL)
+
+        results = extract_and_check_properties(ASimParser, ASimUnionParser,"ASim", ASimParserUrl, ASIMSampleDataURL)
         for result in results:
             print(result)
 
@@ -48,28 +75,25 @@ def run():
         print("***********************************")
 
         # Replace 'ASim' with 'vim' in the filename
-        # Extract the filename from url1
-        filename = url1.split('/')[-1]
+        # Extract the filename from ASimParserUrl
+        ASimParserfilename = ASimParserUrl.split('/')[-1]
         # Replace 'ASim' with 'vim' in the filename
-        new_filename = filename.replace('ASim', 'vim')
-        new_url1 = url1.replace(filename, new_filename)
+        vimParserfilename = ASimParserfilename.replace('ASim', 'vim')
+        vimParserUrl = ASimParserUrl.replace(ASimParserfilename, vimParserfilename)
 
         # Extract the filename from url2
-        filename = url2.split('/')[-1]
+        ASimUnionParserfilename = ASimUnionParserURL.split('/')[-1]
         # Replace 'ASim' with 'vim' in the filename
-        new_filename = filename.replace('ASim', 'im')
-        new_url2 = url2.replace(filename, new_filename)
+        imUnionParserfilename = ASimUnionParserfilename.replace('ASim', 'im')
+        vimUnionParserUrl = ASimUnionParserURL.replace(ASimUnionParserfilename, imUnionParserfilename)
 
-        yaml_file1 = read_github_yaml(new_url1)
-        yaml_file2 = read_github_yaml(new_url2)
+        vimParser = read_github_yaml(vimParserUrl)
+        vimUnionParser = read_github_yaml(vimUnionParserUrl)
 
         # Check if vim parser properties
-        results = []
-        extract_and_check_properties(yaml_file1, yaml_file2,"vim")
+        results = extract_and_check_properties(vimParser, vimUnionParser,"vim", vimParserUrl, ASIMSampleDataURL)
         for result in results:
             print(result)
-
-    
 
 def read_github_yaml(url):
     response = requests.get(url)
@@ -79,7 +103,7 @@ def read_github_yaml(url):
     else:
         return None
 
-def extract_and_check_properties(yaml_file, another_yaml_file, FileType):
+def extract_and_check_properties(Parser_file, Union_Parser__file, FileType, ParserUrl, ASIMSampleDataURL):
     """
     Extracts properties from the given YAML files and checks if they exist in another YAML file.
 
@@ -90,19 +114,20 @@ def extract_and_check_properties(yaml_file, another_yaml_file, FileType):
     Returns:
         list: A list of tuples containing the property name, the property type, and a boolean indicating if the property exists in another_yaml_file.
     """
-    parser_name = yaml_file.get('ParserName')
-    equivalent_built_in_parser = yaml_file.get('EquivalentBuiltInParser')
-    parser = yaml_file.get('Parser', {})
+    results = []
+    parser_name = Parser_file.get('ParserName')
+    equivalent_built_in_parser = Parser_file.get('EquivalentBuiltInParser')
+    parser = Parser_file.get('Parser', {})
     title = parser.get('Title')
     version = parser.get('Version')
     last_updated = parser.get('LastUpdated')
-    normalization = yaml_file.get('Normalization', {})
+    normalization = Parser_file.get('Normalization', {})
     schema = normalization.get('Schema')
     schemaVersion = normalization.get('Version')
-    references = yaml_file.get('References', [])
+    references = Parser_file.get('References', [])
 
     # ParserQuery property is the KQL query extracted from the YAML file
-    parser_query = yaml_file.get('ParserQuery', '')
+    parser_query = Parser_file.get('ParserQuery', '')
 
     # Use a regular expression to find 'EventProduct' in the KQL query
     match = re.search(r'EventProduct\s*=\s*[\'"](\w+)[\'"]', parser_query)
@@ -128,14 +153,14 @@ def extract_and_check_properties(yaml_file, another_yaml_file, FileType):
 
     # Check if parser_name exists in another_yaml_file's 'ParserQuery'
     if parser_name:
-        if parser_name in another_yaml_file.get('ParserQuery', ''):
+        if parser_name in Union_Parser__file.get('ParserQuery', ''):
             results.append((parser_name, 'ParserName exist in union parser', True))
         else:
             results.append((parser_name, 'ParserName not found in union parser', False))
 
     # Check if equivalent_built_in_parser exists in another_yaml_file's 'Parsers'
     if equivalent_built_in_parser:
-        if equivalent_built_in_parser in another_yaml_file.get('Parsers', []):
+        if equivalent_built_in_parser in Union_Parser__file.get('Parsers', []):
             results.append((equivalent_built_in_parser, 'EquivalentBuiltInParser exist in union parser', True))
         else:
             results.append((equivalent_built_in_parser, 'EquivalentBuiltInParser not found in union parser', False))
@@ -233,7 +258,7 @@ def extract_and_check_properties(yaml_file, another_yaml_file, FileType):
     SchemaTestFileName = f'{event_vendor}_{event_product}_{FileType}{schema}_SchemaTest.csv'
     Testerfilenames = [DataTestFileName, SchemaTestFileName]
     # Parse the URL
-    parsed_url = urlparse(url1)
+    parsed_url = urlparse(ParserUrl)
     # Extract everything except the filename
     url_without_filename = parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path.rsplit('/', 2)[0]
     for filename in Testerfilenames:
@@ -257,38 +282,7 @@ def extract_and_check_properties(yaml_file, another_yaml_file, FileType):
             results.append((SampleDataFile, 'Sample data exists', True))
         else:
             results.append((SampleDataFile, 'Sample data does not exist', False))
+    return results
 
-# yaml_file1 = read_github_yaml(url1)
-# yaml_file2 = read_github_yaml(url2)
-print("***********************************")
-print("Performing tests for ASim Parser")
-print("***********************************")
-extract_and_check_properties(yaml_file1, yaml_file2,"ASim")
-for result in results:
-    print(result)
-
-print("***********************************")
-print("Performing tests for vim Parser")
-print("***********************************")
-
-# Replace 'ASim' with 'vim' in the filename
-# Extract the filename from url1
-filename = url1.split('/')[-1]
-# Replace 'ASim' with 'vim' in the filename
-new_filename = filename.replace('ASim', 'vim')
-new_url1 = url1.replace(filename, new_filename)
-
-# Extract the filename from url2
-filename = url2.split('/')[-1]
-# Replace 'ASim' with 'vim' in the filename
-new_filename = filename.replace('ASim', 'im')
-new_url2 = url2.replace(filename, new_filename)
-
-yaml_file1 = read_github_yaml(new_url1)
-yaml_file2 = read_github_yaml(new_url2)
-
-# Check if vim parser properties
-results = []
-extract_and_check_properties(yaml_file1, yaml_file2,"vim")
-for result in results:
-    print(result)
+# Script starts here
+run()
