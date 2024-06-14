@@ -26,6 +26,7 @@ def run():
     current_directory = os.getcwd()
     print(current_directory)
     GetModifiedFiles = "git diff --name-only origin/main -- cd '{current_directory}'/Parsers"
+    print (GetModifiedFiles)
     try:
         modified_files = subprocess.check_output(GetModifiedFiles, shell=True).decode()
     except subprocess.CalledProcessError as e:
