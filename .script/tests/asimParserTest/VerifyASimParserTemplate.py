@@ -25,7 +25,7 @@ def run():
     # Get modified ASIM Parser files along with their status
     current_directory = os.getcwd()
     print(current_directory)
-    GetModifiedFiles = "git diff --name-only origin/main -- cd '{current_directory}'\\Parsers"
+    GetModifiedFiles = "git diff --name-only origin/main -- cd '{current_directory}'/Parsers"
     try:
         modified_files = subprocess.check_output(GetModifiedFiles, shell=True).decode()
     except subprocess.CalledProcessError as e:
