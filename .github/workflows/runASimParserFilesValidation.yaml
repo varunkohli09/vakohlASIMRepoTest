@@ -53,4 +53,4 @@ jobs:
 
     - name: Run Python script
       run: |
-        python .script/tests/asimParsersTest/Review_ASIM_PR.py
+        python .script/tests/asimParsersTest/VerifyASimParserTemplate.py
