@@ -3,6 +3,7 @@ import yaml
 import re
 import os
 import subprocess
+import sys
 from datetime import datetime
 from urllib.parse import urlparse
 from tabulate import tabulate
@@ -14,6 +15,9 @@ SampleDataPath = '/Sample%20Data/ASIM/'
 
 # Global array to store results
 results = []
+
+# Global variable to store if test failed
+failed = 0
 
 # Global dictionary to store schema information
 SchemaInfo = [
@@ -76,6 +80,13 @@ def run():
         table = [[index + 1] + list(result) for index, result in enumerate(results)]
         print(tabulate(table, headers=['S.No', 'Test Value', 'Test Name', 'Result'], tablefmt="grid"))
 
+        # Check if any test failed
+        if any(result[-1] is not True for result in results):
+            print("Some tests failed for ASim Parser. Please check the results above.")
+            failed = 1
+        else:
+            failed = 0
+
         print("***********************************")
         print("Performing tests for vim Parser")
         print("***********************************")
@@ -101,6 +112,17 @@ def run():
         # Print result in tabular format
         table = [[index + 1] + list(result) for index, result in enumerate(results)]
         print(tabulate(table, headers=['S.No', 'Test Value', 'Test Name', 'Result'], tablefmt="grid"))
+
+        # Check if any test failed
+        if any(result[-1] is not True for result in results):
+            print("Some tests failed for ASim Parser. Please check the results above.")
+            failed = 1
+        else:
+            failed = 0
+        
+        # Throw an error if any test failed
+        if failed:
+            throw_error("Some tests failed. Please check the results above.")
 
 def read_github_yaml(url):
     response = requests.get(url)
