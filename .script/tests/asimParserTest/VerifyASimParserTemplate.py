@@ -82,12 +82,12 @@ def run():
 
         # Check if any test failed
         if any(result[-1] is not True for result in results):
-            print("Some tests failed for ASim Parser. Please check the results above.")
+            print("::error::Some tests failed for ASim Parser. Please check the results above.")
             # Assuming read_exclusion_list_from_csv is defined elsewhere in the file
             exclusion_list = read_exclusion_list_from_csv()
             # Check if ASimParser.name exists in the exclusion list
             if ASimParser.get('EquivalentBuiltInParser') in exclusion_list:
-                print(f"{ASimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
+                print(f"::warning::{ASimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
                 failed = 0
             else:
                 failed = 1
@@ -123,10 +123,10 @@ def run():
 
         # Check if any test failed
         if any(result[-1] is not True for result in results):
-            print("Some tests failed for ASim Parser. Please check the results above.")
+            print("::error::Some tests failed for vim Parser. Please check the results above.")
             # Check if ASimParser.EquivalentBuiltInParser exists in the exclusion list
             if vimParser.get('EquivalentBuiltInParser') in exclusion_list:
-                print(f"{vimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
+                print(f"::warning::{vimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
                 failed = 0
             else:
                 failed = 1
