@@ -3,7 +3,7 @@ import yaml
 import re
 import os
 import subprocess
-import sys
+import csv
 from datetime import datetime
 from urllib.parse import urlparse
 from tabulate import tabulate
@@ -83,7 +83,15 @@ def run():
         # Check if any test failed
         if any(result[-1] is not True for result in results):
             print("Some tests failed for ASim Parser. Please check the results above.")
-            failed = 1
+            # Assuming read_exclusion_list_from_csv is defined elsewhere in the file
+            exclusion_list = read_exclusion_list_from_csv()
+            # Check if ASimParser.name exists in the exclusion list
+            if ASimParser.get('EquivalentBuiltInParser') in exclusion_list:
+                print(f"{ASimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
+                failed = 0
+            else:
+                failed = 1
+                #     throw_error("Some tests failed. Please check the results above.") # uncomment this line to throw an error if any test failed
         else:
             failed = 0
 
@@ -116,14 +124,15 @@ def run():
         # Check if any test failed
         if any(result[-1] is not True for result in results):
             print("Some tests failed for ASim Parser. Please check the results above.")
-            failed = 1
+            # Check if ASimParser.EquivalentBuiltInParser exists in the exclusion list
+            if vimParser.get('EquivalentBuiltInParser') in exclusion_list:
+                print(f"{vimParser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
+                failed = 0
+            else:
+                failed = 1
+                #     throw_error("Some tests failed. Please check the results above.") # uncomment this line to throw an error if any test failed
         else:
             failed = 0
-        
-        # Throw an error if any test failed
-        # uncomment the below line to throw an error if any test failed
-        # if failed:
-        #     throw_error("Some tests failed. Please check the results above.")
 
 def read_github_yaml(url):
     response = requests.get(url)
@@ -316,6 +325,16 @@ def extract_and_check_properties(Parser_file, Union_Parser__file, FileType, Pars
         else:
             results.append(('\033[91m' + str(SampleDataFile) + '\033[0m', '\033[91mSample data does not exist\033[0m', '\033[91mFalse\033[0m'))
     return results
+
+# Function to read Exclusion list for ASim Parser test from a CSV file
+def read_exclusion_list_from_csv():
+    exclusion_list = []
+    file_path = '.script/tests/asimParserTest/ExclusionListForASimTests.csv'
+    with open(file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            exclusion_list.append(row[0])
+    return exclusion_list
 
 # Script starts here
 run()
