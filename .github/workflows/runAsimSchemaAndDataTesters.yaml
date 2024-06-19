@@ -2,7 +2,7 @@
 # The script runs ASIM Schema and Data testers on the "eco-connector-test" workspace.
 name: Run ASIM tests on "ASIM-SchemaDataTester-GithubShared" workspace
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, reopened, synchronize, labeled]
     paths:
     - 'Parsers/ASimDns/Parsers/**'
@@ -140,6 +140,8 @@ jobs:
         run: |
               python -m pip install --upgrade pip
               pip install PyYAML
+              pip install azure-identity
+              pip install azure-monitor-query
       - name: Login to Azure Public Cloud
         uses: azure/login@v2
         with:
