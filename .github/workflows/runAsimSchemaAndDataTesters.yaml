@@ -139,6 +139,7 @@ jobs:
       - name: Install dependencies
         run: |
               python -m pip install --upgrade pip
+              pip install PyYAML
       - name: Login to Azure Public Cloud
         uses: azure/login@v2
         with:
