@@ -7,32 +7,27 @@ import yaml
 import contextlib
 import argparse
 import re
+import subprocess
 from datetime import datetime, timedelta, timezone
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from azure.identity import DefaultAzureCredential
+from azure.identity import InteractiveBrowserCredential
 from azure.core.exceptions import HttpResponseError
 
 DUMMY_VALUE = "\'!not_REAL_vAlUe\'"
 MAX_FILTERING_PARAMETERS = 2
+# Workspace ID for the Log Analytics workspace where the ASim filtering tests will be performed.
+WORKSPACE_ID = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
+# Timespan for the parser query
+TIME_SPAN_IN_DAYS = 7
 
 # Negative value as it is cannot be a port number and less likely to be an ID of some event. Also, the absolute value is greater than the maximal possible port number.
 INT_DUMMY_VALUE = -967799
 # The index of the column with the value from a query response.
 COLUMN_INDEX_IN_ROW = 0
 
-argparse_parser = argparse.ArgumentParser()
-argparse_parser.add_argument("ws_id", help = "workspace ID")
-argparse_parser.add_argument("parser_file_relative_path", help = "relative path to the parser file")
-argparse_parser.add_argument("days_delta", default = 1, type = int, help = "number of days to query over ,default is set to  1", nargs='?')
-args = argparse_parser.parse_args()
-ws_id = args.ws_id
-parser_file_path = args.parser_file_relative_path
-days_delta = args.days_delta
-
-
-end_time = datetime.now(timezone.utc)
-start_time = end_time - timedelta(days = days_delta)
-
+ws_id = WORKSPACE_ID
+days_delta = TIME_SPAN_IN_DAYS
 
 def attempt_to_connect(credential):
     try:
@@ -40,7 +35,7 @@ def attempt_to_connect(credential):
             client = LogsQueryClient(credential)
             empty_query = ""
             response = client.query_workspace(
-                    workspace_id = ws_id, 
+                    workspace_id = WORKSPACE_ID, 
                     query = empty_query,
                     timespan = timedelta(days = 1)
                     )
@@ -50,10 +45,19 @@ def attempt_to_connect(credential):
                 return client
     except Exception as e:
         return None
-    
+
+# argparse_parser = argparse.ArgumentParser()
+# argparse_parser.add_argument("ws_id", help = "workspace ID")
+# argparse_parser.add_argument("parser_file_relative_path", help = "relative path to the parser file")
+# argparse_parser.add_argument("days_delta", default = 1, type = int, help = "number of days to query over ,default is set to  1", nargs='?')
+# args = argparse_parser.parse_args()
+
+
+end_time = datetime.now(timezone.utc)
+start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 
 # Authenticating the user
-client = attempt_to_connect(DefaultAzureCredential(exclude_interactive_browser_credential = False))
+client = attempt_to_connect(InteractiveBrowserCredential())
 if client is None:
     client = attempt_to_connect(DefaultAzureCredential(exclude_interactive_browser_credential = False, exclude_shared_token_cache_credential = True))
     if client is None:
@@ -206,29 +210,57 @@ def get_splitted_parts_of_string(values_list):
 class FilteringTest(unittest.TestCase):
     # "Main" function which opens the parser file, checks if it has all the required fields, checks if there is data in the provided workspace and then initiates the tests for each parameter in the parser.
     def tests_main_func(self):
-        if not os.path.exists(parser_file_path):
-            self.fail(f"File path does not exist: {parser_file_path}")
-        if not parser_file_path.endswith('.yaml'): 
-            self.fail(f"Not a yaml file: {parser_file_path}")
+        # Get modified ASIM Parser files along with their status
+        current_directory = os.path.dirname(os.path.abspath(__file__))
+        GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
+        print (GetModifiedFiles)
         try:
-            parser_file = get_parser(parser_file_path)
-        except:
-            self.fail(f"Cannot open file: {parser_file_path}")
-        self.check_required_fields(parser_file)
-        query_definition = create_query_definition_string(parser_file)
-        self.check_data_in_workspace(query_definition)
-        columns_in_answer = self.get_columns_of_parser_answer(query_definition)
-        schema_of_parser = parser_file['Normalization']['Schema']
-        if schema_of_parser not in all_schemas_parameters:
-            self.fail(f"Schema: {schema_of_parser} - Not an existing schema or not supported by the validations script")
-        param_to_column_mapping = all_schemas_parameters[schema_of_parser]
-        for param in parser_file['ParserParams']:
-            param_name = param['Name']
-            with self.subTest():
-                if param_name not in param_to_column_mapping:
-                    self.fail(f"parameter: {param_name} - No such parameter in {schema_of_parser} schema")
-                column_name_in_table = param_to_column_mapping[param_name]
-                self.send_param_to_test(param, query_definition, columns_in_answer, column_name_in_table)            
+            modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred while executing the command: {e}")
+        
+        # Get only YAML files
+        modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
+        print("Following files has been detected as modified:")
+        for file in modified_yaml_files:
+            print(f"- {file}")
+
+        for PARSER_FILE_NAME in modified_yaml_files:
+            # Use regular expression to extract SchemaName from the parser filename
+            SchemaNameMatch = re.search(r'ASim(\w+)/', PARSER_FILE_NAME)
+            if SchemaNameMatch:
+                SchemaName = SchemaNameMatch.group(1)
+            else:
+                SchemaName = None
+            # Check if changed file is a union parser. If Yes, skip the file
+            if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
+                continue
+            parser_file_path = PARSER_FILE_NAME
+            
+            if not os.path.exists(parser_file_path):
+                self.fail(f"File path does not exist: {parser_file_path}")
+            if not parser_file_path.endswith('.yaml'): 
+                self.fail(f"Not a yaml file: {parser_file_path}")
+            try:
+                parser_file = get_parser(parser_file_path)
+            except:
+                self.fail(f"Cannot open file: {parser_file_path}")
+            self.check_required_fields(parser_file)
+            query_definition = create_query_definition_string(parser_file)
+            self.check_data_in_workspace(query_definition)
+            columns_in_answer = self.get_columns_of_parser_answer(query_definition)
+            schema_of_parser = parser_file['Normalization']['Schema']
+            if schema_of_parser not in all_schemas_parameters:
+                self.fail(f"Schema: {schema_of_parser} - Not an existing schema or not supported by the validations script")
+            param_to_column_mapping = all_schemas_parameters[schema_of_parser]
+            print(f"Starting filter tests for {parser_file.get('ParserName')} parser with schema: {schema_of_parser}")
+            for param in parser_file['ParserParams']:
+                param_name = param['Name']
+                with self.subTest():
+                    if param_name not in param_to_column_mapping:
+                        self.fail(f"parameter: {param_name} - No such parameter in {schema_of_parser} schema")
+                    column_name_in_table = param_to_column_mapping[param_name]
+                    self.send_param_to_test(param, query_definition, columns_in_answer, column_name_in_table)            
 
 
     def send_param_to_test(self, param, query_definition, columns_in_answer, column_name_in_table):
