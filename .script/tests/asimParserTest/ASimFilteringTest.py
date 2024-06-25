@@ -26,6 +26,11 @@ COLUMN_INDEX_IN_ROW = 0
 ws_id = WORKSPACE_ID
 days_delta = TIME_SPAN_IN_DAYS
 
+# ANSI escape sequences for colors
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+RESET = '\033[0m'  # Reset to default color
+
 def attempt_to_connect():
     try:
             credential = DefaultAzureCredential()
@@ -41,7 +46,7 @@ def attempt_to_connect():
             else:
                 return client
     except Exception as e:
-        print(f"Error connecting to Azure Log Analytics: {str(e)}")
+        print(f"::error::Error connecting to Azure Log Analytics: {str(e)}")
         sys.stdout.flush()  # Explicitly flush stdout
         return None
 
@@ -58,7 +63,7 @@ start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 # Authenticating the user
 client = attempt_to_connect()
 if client is None:
-        print("Couldn't connect to workspace with DefaultAzureCredential.")
+        print("::error::Couldn't connect to workspace with DefaultAzureCredential.")
         sys.stdout.flush()  # Explicitly flush stdout
         sys.exit()
 else:
@@ -217,20 +222,18 @@ def main():
     # Get modified ASIM Parser files along with their status
     current_directory = os.path.dirname(os.path.abspath(__file__))
     GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
-    print (GetModifiedFiles)
-    sys.stdout.flush()  # Explicitly flush stdout
     try:
         modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"An error occurred while executing the command: {e}")
+        print(f"::error::An error occurred while executing the command: {e}")
         sys.stdout.flush()  # Explicitly flush stdout
     
     # Get only YAML files
     modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
-    print("Following files has been detected as modified:")
+    print("{YELLOW}Following files has been detected as modified:{RESET}")
     sys.stdout.flush()  # Explicitly flush stdout
     for file in modified_yaml_files:
-        print(f"- {file}")
+        print(f"{GREEN}- {file}{RESET}")
         sys.stdout.flush()  # Explicitly flush stdout
 
     for PARSER_FILE_NAME in modified_yaml_files:
@@ -244,7 +247,7 @@ def main():
         if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
             continue
         parser_file_path = PARSER_FILE_NAME
-        print(f"Running tests for {parser_file_path}")
+        print(f"{GREEN}Running tests for {parser_file_path}{RESET}")
         sys.stdout.flush()  # Explicitly flush stdout
 
         suite = unittest.TestSuite()
@@ -254,7 +257,7 @@ def main():
 
         runner = unittest.TextTestRunner()
         # Print separator for clarity
-        print(f"\n--- Running tests for {parser_file_path} ---")
+        print(f"\n{GREEN}--- Running tests for {parser_file_path} ---{RESET}")
         sys.stdout.flush()  # Explicitly flush stdout
         runner.run(suite)
 
@@ -308,7 +311,7 @@ class FilteringTest(unittest.TestCase):
 
     def tests_main_func(self):
             parser_file_path = self.parser_file_path
-            print(f"Running tests_main_func with file: {parser_file_path}")
+            print(f"{GREEN}Running tests_main_func with file: {parser_file_path}{RESET}")
             sys.stdout.flush()  # Explicitly flush stdout
             if not os.path.exists(parser_file_path):
                 self.fail(f"File path does not exist: {parser_file_path}")
