@@ -29,7 +29,7 @@ COLUMN_INDEX_IN_ROW = 0
 ws_id = WORKSPACE_ID
 days_delta = TIME_SPAN_IN_DAYS
 
-def attempt_to_connect(credential):
+def attempt_to_connect():
     try:
             credential = DefaultAzureCredential()
             client = LogsQueryClient(credential)
