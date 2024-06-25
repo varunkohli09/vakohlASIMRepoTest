@@ -28,7 +28,7 @@ ws_id = WORKSPACE_ID
 days_delta = TIME_SPAN_IN_DAYS
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)  # Set the logging level as needed
+logging.basicConfig(level=logging.WARNING)  # Set the logging level as needed
 
 def attempt_to_connect():
     try:
@@ -219,7 +219,7 @@ def main():
     # Get modified ASIM Parser files along with their status
     current_directory = os.path.dirname(os.path.abspath(__file__))
     GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
-    logging.info (GetModifiedFiles)
+    logging.warning (GetModifiedFiles)
     try:
         modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
     except subprocess.CalledProcessError as e:
@@ -227,9 +227,9 @@ def main():
     
     # Get only YAML files
     modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
-    logging.info("Following files has been detected as modified:")
+    logging.warning("Following files has been detected as modified:")
     for file in modified_yaml_files:
-        logging.info(f"- {file}")
+        logging.warning(f"- {file}")
 
     for PARSER_FILE_NAME in modified_yaml_files:
         # Use regular expression to extract SchemaName from the parser filename
@@ -242,7 +242,7 @@ def main():
         if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
             continue
         parser_file_path = PARSER_FILE_NAME
-        logging.info(f"Running tests for {parser_file_path}")
+        logging.warning(f"Running tests for {parser_file_path}")
 
         suite = unittest.TestSuite()
 
@@ -251,7 +251,7 @@ def main():
 
         runner = unittest.TextTestRunner()
         # Print separator for clarity
-        logging.info(f"\n--- Running tests for {parser_file_path} ---")
+        logging.warning(f"\n--- Running tests for {parser_file_path} ---")
         runner.run(suite)
 
 # class CustomTestResult(unittest.TextTestResult):
@@ -304,7 +304,7 @@ class FilteringTest(unittest.TestCase):
 
     def tests_main_func(self):
             parser_file_path = self.parser_file_path
-            logging.info(f"Running tests_main_func with file: {parser_file_path}")
+            logging.warning(f"Running tests_main_func with file: {parser_file_path}")
             if not os.path.exists(parser_file_path):
                 self.fail(f"File path does not exist: {parser_file_path}")
             if not self.parser_file_path.endswith('.yaml'): 
