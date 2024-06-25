@@ -261,47 +261,6 @@ def main():
         sys.stdout.flush()  # Explicitly flush stdout
         runner.run(suite)
 
-# class CustomTestResult(unittest.TextTestResult):
-#     def __init__(self, stream, descriptions, verbosity):
-#         super().__init__(stream, descriptions, verbosity)
-#         self.file_results = {}
-
-#     def startTest(self, test):
-#         super().startTest(test)
-#         self.current_file = getattr(test, 'parser_file_path', 'unknown')
-
-#     def addSuccess(self, test):
-#         super().addSuccess(test)
-#         self._addResult(test, 'success')
-
-#     def addFailure(self, test, err):
-#         super().addFailure(test, err)
-#         self._addResult(test, 'failure')
-
-#     def addError(self, test, err):
-#         super().addError(test, err)
-#         self._addResult(test, 'error')
-
-#     def _addResult(self, test, result):
-#         if self.current_file not in self.file_results:
-#             self.file_results[self.current_file] = []
-#         self.file_results[self.current_file].append((test, result))
-
-# class CustomTestRunner(unittest.TextTestRunner):
-#     def _makeResult(self):
-#         return CustomTestResult(self.stream, self.descriptions, self.verbosity)
-
-#     def run(self, test):
-#         result = super().run(test)
-#         self._printResults(result)
-#         return result
-
-#     def _printResults(self, result):
-#         for file, tests in result.file_results.items():
-#             print(f"\nResults for {file}:")
-#             for test, status in tests:
-#                 print(f"{test}: {status}")
-
 
 class FilteringTest(unittest.TestCase):
 
@@ -783,6 +742,16 @@ all_schemas_parameters = {
         "starttime" : "EventStartTime",
         "targetusername_has" : "TargetUsername"
     },
+    "DhcpEvent" :
+    {
+        "disabled" : "",
+        "eventresult" : "EventResult",
+        "endtime" : "EventEndTime",
+        "starttime" : "EventStartTime",
+        "srcipaddr_has_any_prefix" : "SrcIpAddr",
+        "srchostname_has_any" : "SrcHostname",
+        "srcusername_has_any" : "SrcUsername"
+    },
     "Dns" : 
     {
         "disabled" : "",
@@ -794,6 +763,19 @@ all_schemas_parameters = {
         "responsecodename" : "DnsResponseCodeName",
         "srcipaddr" : "SrcIpAddr",
         "starttime" : "EventStartTime"
+    },
+    "FileEvent" :
+    {
+        "actorusername_has_any" : "ActorUsername",
+        "disabled" : "",
+        "eventtype_in" : "EventType",
+        "endtime" : "EventEndTime",
+        "srcfilepath_has_any" : "SrcFilePath",
+        "srcipaddr_has_any_prefix" : "SrcIpAddr",
+        "starttime" : "EventStartTime",
+        "targetfilepath_has_any" : "TargetFilePath",
+        "hashes_has_any" : "Hash",
+        "dvchostname_has_any" : "DvcHostname"
     },
     "NetworkSession" :
     {
@@ -812,7 +794,6 @@ all_schemas_parameters = {
 	{
 		"actingprocess_has_any" : "ActingProcessName",
 		"actorusername" : "ActorUsername",
-		"actorusername_has" : "ActorUsername",
 		"commandline_has_all" : "CommandLine",
 		"commandline_has_any" : "CommandLine",
 		"commandline_has_any_ip_prefix" : "CommandLine",
@@ -826,15 +807,37 @@ all_schemas_parameters = {
 		"parentprocess_has_any" : "ParentProcessName",
 		"starttime" : "EventStartTime",
 		"targetprocess_has_any" : "TargetProcessName",
-		"targetusername" : "TargetUsername",
-		"targetusername_has" : "TargetUsername"
+		"targetusername" : "TargetUsername"
 	},
+    "RegistryEvent" :
+    {
+        "actorusername_has_any" : "ActorUsername",
+        "disabled" : "",
+        "dvchostname_has_any" : "DvcHostname",
+        "endtime" : "EventEndTime",
+        "eventtype_in" : "EventType",
+        "registrykey_has_any" : "RegistryKey",
+        "registryvalue_has_any" : "RegistryValue",
+        "registrydata_has_any" : "RegistryValueData",
+        "starttime" : "EventStartTime"
+    },
+    "UserManagement" :
+    {
+        "actorusername_has_any" : "ActorUsername",
+        "disabled" : "",
+        "endtime" : "EventEndTime",
+        "eventtype_in" : "EventType",
+        "srcipaddr_has_any_prefix" : "SrcIpAddr",
+        "starttime" : "EventStartTime",
+        "targetusername_has_any" : "TargetUsername"
+    },
     "WebSession" :
     {
         "disabled" : "",
         "endtime" : "EventEndTime",
         "eventresult" : "EventResult",
         "eventresultdetails_in" : "EventResultDetails",
+        "eventresultdetails_has_any" : "EventResultDetails",
         "httpuseragent_has_any" : "HttpUserAgent",
         "ipaddr_has_any_prefix" : "IpAddr",
         "srcipaddr_has_any_prefix" : "SrcIpAddr",
