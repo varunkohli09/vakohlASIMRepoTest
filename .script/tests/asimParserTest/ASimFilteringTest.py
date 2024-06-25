@@ -230,7 +230,7 @@ def main():
     
     # Get only YAML files
     modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
-    print("{YELLOW}Following files has been detected as modified:{RESET}")
+    print(f"{YELLOW}Following files has been detected as modified:{RESET}")
     sys.stdout.flush()  # Explicitly flush stdout
     for file in modified_yaml_files:
         print(f"{GREEN}- {file}{RESET}")
