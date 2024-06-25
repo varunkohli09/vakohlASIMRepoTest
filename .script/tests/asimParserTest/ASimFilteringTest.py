@@ -58,13 +58,13 @@ end_time = datetime.now(timezone.utc)
 start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 
 # Authenticating the user
-client = attempt_to_connect(InteractiveBrowserCredential())
+client = attempt_to_connect()
 if client is None:
-    client = attempt_to_connect(DefaultAzureCredential(exclude_interactive_browser_credential = False, exclude_shared_token_cache_credential = True))
-    if client is None:
-        print("Couldn't connect to workspace")
+        print("Couldn't connect to workspace with DefaultAzureCredential.")
         sys.exit()
-
+else:
+        # Proceed with using 'client' for further operations
+        pass
 
 def get_parser(parser_path):
     try:
