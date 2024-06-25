@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from azure.identity import DefaultAzureCredential
 from azure.core.exceptions import HttpResponseError
-import logging
 
 DUMMY_VALUE = "\'!not_REAL_vAlUe\'"
 MAX_FILTERING_PARAMETERS = 2
@@ -27,9 +26,6 @@ COLUMN_INDEX_IN_ROW = 0
 ws_id = WORKSPACE_ID
 days_delta = TIME_SPAN_IN_DAYS
 
-# Configure logging
-logging.basicConfig(level=logging.WARNING)  # Set the logging level as needed
-
 def attempt_to_connect():
     try:
             credential = DefaultAzureCredential()
@@ -45,7 +41,8 @@ def attempt_to_connect():
             else:
                 return client
     except Exception as e:
-        logging.error(f"Error connecting to Azure Log Analytics: {str(e)}")
+        print(f"Error connecting to Azure Log Analytics: {str(e)}")
+        sys.stdout.flush()  # Explicitly flush stdout
         return None
 
 # argparse_parser = argparse.ArgumentParser()
@@ -61,7 +58,8 @@ start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 # Authenticating the user
 client = attempt_to_connect()
 if client is None:
-        logging.error("Couldn't connect to workspace with DefaultAzureCredential.")
+        print("Couldn't connect to workspace with DefaultAzureCredential.")
+        sys.stdout.flush()  # Explicitly flush stdout
         sys.exit()
 else:
         # Proceed with using 'client' for further operations
@@ -219,17 +217,21 @@ def main():
     # Get modified ASIM Parser files along with their status
     current_directory = os.path.dirname(os.path.abspath(__file__))
     GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
-    logging.warning (GetModifiedFiles)
+    print (GetModifiedFiles)
+    sys.stdout.flush()  # Explicitly flush stdout
     try:
         modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
     except subprocess.CalledProcessError as e:
-        logging.error(f"An error occurred while executing the command: {e}")
+        print(f"An error occurred while executing the command: {e}")
+        sys.stdout.flush()  # Explicitly flush stdout
     
     # Get only YAML files
     modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
-    logging.warning("Following files has been detected as modified:")
+    print("Following files has been detected as modified:")
+    sys.stdout.flush()  # Explicitly flush stdout
     for file in modified_yaml_files:
-        logging.warning(f"- {file}")
+        print(f"- {file}")
+        sys.stdout.flush()  # Explicitly flush stdout
 
     for PARSER_FILE_NAME in modified_yaml_files:
         # Use regular expression to extract SchemaName from the parser filename
@@ -242,7 +244,8 @@ def main():
         if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
             continue
         parser_file_path = PARSER_FILE_NAME
-        logging.warning(f"Running tests for {parser_file_path}")
+        print(f"Running tests for {parser_file_path}")
+        sys.stdout.flush()  # Explicitly flush stdout
 
         suite = unittest.TestSuite()
 
@@ -251,7 +254,8 @@ def main():
 
         runner = unittest.TextTestRunner()
         # Print separator for clarity
-        logging.warning(f"\n--- Running tests for {parser_file_path} ---")
+        print(f"\n--- Running tests for {parser_file_path} ---")
+        sys.stdout.flush()  # Explicitly flush stdout
         runner.run(suite)
 
 # class CustomTestResult(unittest.TextTestResult):
@@ -304,7 +308,8 @@ class FilteringTest(unittest.TestCase):
 
     def tests_main_func(self):
             parser_file_path = self.parser_file_path
-            logging.warning(f"Running tests_main_func with file: {parser_file_path}")
+            print(f"Running tests_main_func with file: {parser_file_path}")
+            sys.stdout.flush()  # Explicitly flush stdout
             if not os.path.exists(parser_file_path):
                 self.fail(f"File path does not exist: {parser_file_path}")
             if not self.parser_file_path.endswith('.yaml'): 
