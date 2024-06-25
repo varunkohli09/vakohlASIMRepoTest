@@ -11,8 +11,8 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from azure.identity import DefaultAzureCredential
-from azure.identity import InteractiveBrowserCredential
 from azure.core.exceptions import HttpResponseError
+import glob
 
 DUMMY_VALUE = "\'!not_REAL_vAlUe\'"
 MAX_FILTERING_PARAMETERS = 2
@@ -31,7 +31,7 @@ days_delta = TIME_SPAN_IN_DAYS
 
 def attempt_to_connect(credential):
     try:
-        with contextlib.redirect_stderr(None):
+            credential = DefaultAzureCredential()
             client = LogsQueryClient(credential)
             empty_query = ""
             response = client.query_workspace(
@@ -40,10 +40,11 @@ def attempt_to_connect(credential):
                     timespan = timedelta(days = 1)
                     )
             if response.status == LogsQueryStatus.PARTIAL or response.status == LogsQueryStatus.FAILURE:
-                raise Exception()
+                raise Exception("Query failed or returned partial data.")
             else:
                 return client
     except Exception as e:
+        print(f"Error connecting to Azure Log Analytics: {str(e)}")
         return None
 
 # argparse_parser = argparse.ArgumentParser()
@@ -207,39 +208,105 @@ def get_splitted_parts_of_string(values_list):
     return (None, None)
 
 
-class FilteringTest(unittest.TestCase):
-    # "Main" function which opens the parser file, checks if it has all the required fields, checks if there is data in the provided workspace and then initiates the tests for each parameter in the parser.
-    def tests_main_func(self):
-        # Get modified ASIM Parser files along with their status
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
-        print (GetModifiedFiles)
-        try:
-            modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred while executing the command: {e}")
-        
-        # Get only YAML files
-        modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
-        print("Following files has been detected as modified:")
-        for file in modified_yaml_files:
-            print(f"- {file}")
+def load_tests_from_file(file_path):
+    # Function to load test cases from a given parser file
+    # This might involve dynamically loading modules, reading file contents, etc.
+    # For simplicity, assuming the tests are defined in classes like FilteringTest
+    return unittest.TestLoader().loadTestsFromTestCase(FilteringTest)
 
-        for PARSER_FILE_NAME in modified_yaml_files:
-            # Use regular expression to extract SchemaName from the parser filename
-            SchemaNameMatch = re.search(r'ASim(\w+)/', PARSER_FILE_NAME)
-            if SchemaNameMatch:
-                SchemaName = SchemaNameMatch.group(1)
-            else:
-                SchemaName = None
-            # Check if changed file is a union parser. If Yes, skip the file
-            if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
-                continue
-            parser_file_path = PARSER_FILE_NAME
-            
+def main():
+    # Get modified ASIM Parser files along with their status
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
+    print (GetModifiedFiles)
+    try:
+        modified_files = subprocess.run(GetModifiedFiles, shell=True, text=True, capture_output=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing the command: {e}")
+    
+    # Get only YAML files
+    modified_yaml_files = [line for line in modified_files.stdout.splitlines() if line.endswith('.yaml')]
+    print("Following files has been detected as modified:")
+    for file in modified_yaml_files:
+        print(f"- {file}")
+
+    for PARSER_FILE_NAME in modified_yaml_files:
+        # Use regular expression to extract SchemaName from the parser filename
+        SchemaNameMatch = re.search(r'ASim(\w+)/', PARSER_FILE_NAME)
+        if SchemaNameMatch:
+            SchemaName = SchemaNameMatch.group(1)
+        else:
+            SchemaName = None
+        # Check if changed file is a union parser. If Yes, skip the file
+        if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
+            continue
+        parser_file_path = PARSER_FILE_NAME
+        print(f"Running tests for {parser_file_path}")
+
+        suite = unittest.TestSuite()
+
+         # Add tests for the current parser file to the test suite
+        suite.addTest(FilteringTest('tests_main_func', parser_file_path))
+
+        runner = unittest.TextTestRunner()
+        # Print separator for clarity
+        print(f"\n--- Running tests for {parser_file_path} ---")
+        runner.run(suite)
+
+# class CustomTestResult(unittest.TextTestResult):
+#     def __init__(self, stream, descriptions, verbosity):
+#         super().__init__(stream, descriptions, verbosity)
+#         self.file_results = {}
+
+#     def startTest(self, test):
+#         super().startTest(test)
+#         self.current_file = getattr(test, 'parser_file_path', 'unknown')
+
+#     def addSuccess(self, test):
+#         super().addSuccess(test)
+#         self._addResult(test, 'success')
+
+#     def addFailure(self, test, err):
+#         super().addFailure(test, err)
+#         self._addResult(test, 'failure')
+
+#     def addError(self, test, err):
+#         super().addError(test, err)
+#         self._addResult(test, 'error')
+
+#     def _addResult(self, test, result):
+#         if self.current_file not in self.file_results:
+#             self.file_results[self.current_file] = []
+#         self.file_results[self.current_file].append((test, result))
+
+# class CustomTestRunner(unittest.TextTestRunner):
+#     def _makeResult(self):
+#         return CustomTestResult(self.stream, self.descriptions, self.verbosity)
+
+#     def run(self, test):
+#         result = super().run(test)
+#         self._printResults(result)
+#         return result
+
+#     def _printResults(self, result):
+#         for file, tests in result.file_results.items():
+#             print(f"\nResults for {file}:")
+#             for test, status in tests:
+#                 print(f"{test}: {status}")
+
+
+class FilteringTest(unittest.TestCase):
+
+    def __init__(self, methodName='runTest', parser_file_path=None):
+        super().__init__(methodName)
+        self.parser_file_path = parser_file_path
+
+    def tests_main_func(self):
+            parser_file_path = self.parser_file_path
+            print(f"Running tests_main_func with file: {parser_file_path}")
             if not os.path.exists(parser_file_path):
                 self.fail(f"File path does not exist: {parser_file_path}")
-            if not parser_file_path.endswith('.yaml'): 
+            if not self.parser_file_path.endswith('.yaml'): 
                 self.fail(f"Not a yaml file: {parser_file_path}")
             try:
                 parser_file = get_parser(parser_file_path)
@@ -253,15 +320,17 @@ class FilteringTest(unittest.TestCase):
             if schema_of_parser not in all_schemas_parameters:
                 self.fail(f"Schema: {schema_of_parser} - Not an existing schema or not supported by the validations script")
             param_to_column_mapping = all_schemas_parameters[schema_of_parser]
-            print(f"Starting filter tests for {parser_file.get('ParserName')} parser with schema: {schema_of_parser}")
             for param in parser_file['ParserParams']:
                 param_name = param['Name']
                 with self.subTest():
                     if param_name not in param_to_column_mapping:
                         self.fail(f"parameter: {param_name} - No such parameter in {schema_of_parser} schema")
                     column_name_in_table = param_to_column_mapping[param_name]
-                    self.send_param_to_test(param, query_definition, columns_in_answer, column_name_in_table)            
+                    self.send_param_to_test(param, query_definition, columns_in_answer, column_name_in_table)
 
+    def run_tests_on_files(self, file_path):
+        with self.subTest(file=file_path):
+            self.tests_main_func(file_path)
 
     def send_param_to_test(self, param, query_definition, columns_in_answer, column_name_in_table):
         """
@@ -767,8 +836,8 @@ all_schemas_parameters = {
 
 ##############################################################################################################################
 
-
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(FilteringTest)
-    runner = unittest.TextTestRunner()
-    runner.run(suite)
+    main()
+    # suite = unittest.TestLoader().loadTestsFromTestCase(FilteringTest)
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)
