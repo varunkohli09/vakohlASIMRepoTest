@@ -9,7 +9,9 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from azure.monitor.query import LogsQueryClient, LogsQueryStatus
 from azure.identity import DefaultAzureCredential
+from azure.identity import InteractiveBrowserCredential
 from azure.core.exceptions import HttpResponseError
+import csv
 
 DUMMY_VALUE = "\'!not_REAL_vAlUe\'"
 MAX_FILTERING_PARAMETERS = 2
@@ -17,6 +19,9 @@ MAX_FILTERING_PARAMETERS = 2
 WORKSPACE_ID = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
 # Timespan for the parser query
 TIME_SPAN_IN_DAYS = 7
+
+# exclusion_file_path refers to the CSV file path containing a list of parsers. Despite failing tests, these parsers will not cause the overall workflow to fail
+exclusion_file_path = '.script/tests/asimParserTest/ExclusionListForASimTests.csv'
 
 # Negative value as it is cannot be a port number and less likely to be an ID of some event. Also, the absolute value is greater than the maximal possible port number.
 INT_DUMMY_VALUE = -967799
@@ -31,9 +36,14 @@ GREEN = '\033[92m'
 YELLOW = '\033[93m'
 RESET = '\033[0m'  # Reset to default color
 
+# end_time is the current time, start_time is the time TIME_SPAN_IN_DAYS ago
+end_time = datetime.now(timezone.utc)
+start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
+
 def attempt_to_connect():
     try:
             credential = DefaultAzureCredential()
+            # credential = InteractiveBrowserCredential() # Uncomment this line if you want to use the interactive browser credential for testing purposes
             client = LogsQueryClient(credential)
             empty_query = ""
             response = client.query_workspace(
@@ -49,16 +59,6 @@ def attempt_to_connect():
         print(f"::error::Error connecting to Azure Log Analytics: {str(e)}")
         sys.stdout.flush()  # Explicitly flush stdout
         return None
-
-# argparse_parser = argparse.ArgumentParser()
-# argparse_parser.add_argument("ws_id", help = "workspace ID")
-# argparse_parser.add_argument("parser_file_relative_path", help = "relative path to the parser file")
-# argparse_parser.add_argument("days_delta", default = 1, type = int, help = "number of days to query over ,default is set to  1", nargs='?')
-# args = argparse_parser.parse_args()
-
-
-end_time = datetime.now(timezone.utc)
-start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 
 # Authenticating the user
 client = attempt_to_connect()
@@ -218,6 +218,15 @@ def load_tests_from_file(file_path):
     # For simplicity, assuming the tests are defined in classes like FilteringTest
     return unittest.TestLoader().loadTestsFromTestCase(FilteringTest)
 
+# Function to read Exclusion list for ASim Parser test from a CSV file
+def read_exclusion_list_from_csv():
+    exclusion_list = []
+    with open(exclusion_file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            exclusion_list.append(row[0])
+    return exclusion_list
+
 def main():
     # Get modified ASIM Parser files along with their status
     current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -247,7 +256,6 @@ def main():
         if PARSER_FILE_NAME.endswith((f'ASim{SchemaName}.yaml', f'im{SchemaName}.yaml')):
             continue
         parser_file_path = PARSER_FILE_NAME
-        print(f"{GREEN}Running tests for {parser_file_path}{RESET}")
         sys.stdout.flush()  # Explicitly flush stdout
 
         suite = unittest.TestSuite()
@@ -257,9 +265,22 @@ def main():
 
         runner = unittest.TextTestRunner()
         # Print separator for clarity
-        print(f"\n{GREEN}--- Running tests for {parser_file_path} ---{RESET}")
+        print(f"\n{GREEN}--- Running filter tests for parser: '{parser_file_path}'{RESET}")
         sys.stdout.flush()  # Explicitly flush stdout
-        runner.run(suite)
+        result = runner.run(suite)
+        if not result.wasSuccessful():
+            try:
+                parser_file = get_parser(parser_file_path)
+                if parser_file['EquivalentBuiltInParser'] in read_exclusion_list_from_csv():
+                    print(f"{YELLOW}The parser {parser_file_path} is listed in the exclusions file. Therefore, this workflow run will not fail because of it. To allow this parser to cause the workflow to fail, please remove its name from the exclusions list file located at: {exclusion_file_path}{RESET}")
+                    sys.stdout.flush()
+                else:
+                    print(f"::error::Tests failed for {parser_file_path}")
+                    sys.stdout.flush()  # Explicitly flush stdout
+                    sys.exit(0) # Change to 1 if you want github workflow to fail when tests are not successful.
+            except subprocess.CalledProcessError as e:
+                print(f"::error::An error occurred while reading parser file: {e}")
+                sys.stdout.flush()  # Explicitly flush stdout
 
 
 class FilteringTest(unittest.TestCase):
@@ -270,7 +291,6 @@ class FilteringTest(unittest.TestCase):
 
     def tests_main_func(self):
             parser_file_path = self.parser_file_path
-            print(f"{GREEN}Running tests_main_func with file: {parser_file_path}{RESET}")
             sys.stdout.flush()  # Explicitly flush stdout
             if not os.path.exists(parser_file_path):
                 self.fail(f"File path does not exist: {parser_file_path}")
@@ -471,7 +491,6 @@ class FilteringTest(unittest.TestCase):
     def fail_if_values_list_is_empty(self, values_list,parameter_name, test_type):
         if len(values_list) == 0:
             self.fail(f"Parameter: {parameter_name} - Unable to find values to perform {test_type} tests")
-            sys.exit(1)
 
 
     def dynamic_tests_helper(self, parameter_name, query_definition, num_of_rows_when_no_filters_in_query, column_name_in_table, values_list, test_type):

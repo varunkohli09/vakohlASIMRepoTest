@@ -82,7 +82,7 @@ def run():
         # Check if any test failed
         if any(result[-1] is not True for result in results):
             print("::error::Some tests failed for ASim Parser. Please check the results above.")
-            # Assuming read_exclusion_list_from_csv is defined elsewhere in the file
+            # Reading exclusion list from CSV file
             exclusion_list = read_exclusion_list_from_csv()
             # Check if ASimParser.name exists in the exclusion list
             if ASimParser.get('EquivalentBuiltInParser') in exclusion_list:
