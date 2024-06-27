@@ -471,6 +471,7 @@ class FilteringTest(unittest.TestCase):
     def fail_if_values_list_is_empty(self, values_list,parameter_name, test_type):
         if len(values_list) == 0:
             self.fail(f"Parameter: {parameter_name} - Unable to find values to perform {test_type} tests")
+            sys.exit(1)
 
 
     def dynamic_tests_helper(self, parameter_name, query_definition, num_of_rows_when_no_filters_in_query, column_name_in_table, values_list, test_type):
