@@ -9,6 +9,9 @@ $yellow = "`e[33m"
 # ANSI escape code to reset color
 $reset = "`e[0m"
 
+# Parser exclusion file path
+$ParserExclusionsFilePath ="$($PSScriptRoot)/ExclusionListForASimTests.csv"
+
 Class Parser {
     [string] $Name
     [string] $OriginalQuery
@@ -130,7 +133,7 @@ function invokeAsimTester([string] $test, [string] $name, [string] $kind) {
                 {
                     $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
                     Write-Host "::error::$FinalMessage"
-                    Write-Host "::warning::Ignoring the errors for the parser '$name' as it is part of the exclusions list."
+                    Write-Host "::warning::The parser '$name' is listed in the parser exclusions file. Therefore, this workflow run will not fail because of it. To allow this parser to cause the workflow to fail, please remove its name from the exclusions list file located at: '$ParserExclusionsFilePath'"
                 }
                 elseif ($Errorcount -gt 0) {
                     $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
@@ -168,8 +171,7 @@ function getParameters([System.Collections.Generic.List`1[System.Object]] $parse
 }
 
 function IgnoreValidationForASIMParsers() {
-    $csvPath = "$($PSScriptRoot)/ExclusionListForASimTests.csv"
-    $csvContent = Import-Csv -Path $csvPath
+    $csvContent = Import-Csv -Path $ParserExclusionsFilePath
     $parserNames = @()
 
     foreach ($row in $csvContent) {
