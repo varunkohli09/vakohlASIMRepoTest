@@ -67,8 +67,8 @@ jobs:
           inlineScript: |
             & ".script/tests/asimParserTest/runAsimTesters.ps1"
           azPSVersion: "latest"
-          errorActionPreference: continue
-          failOnStandardError: false
+          errorActionPreference: Stop
+          failOnStandardError: true
   Run-ASim-TemplateValidation:
     name: Run ASim Template Validation tests
     runs-on: ubuntu-latest
