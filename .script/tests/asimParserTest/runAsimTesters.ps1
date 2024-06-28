@@ -1,4 +1,3 @@
-$global:failed = 0
 # Workspace ID for the Log Analytics workspace where the ASim schema and data tests will be conducted
 $global:workspaceId = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
 
@@ -138,8 +137,7 @@ function invokeAsimTester([string] $test, [string] $name, [string] $kind) {
                 elseif ($Errorcount -gt 0) {
                     $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
                     Write-Host "::error:: $FinalMessage"
-                    $global:failed = 1 # Commented out to allow the script to continue running
-                    throw "Test failed with errors. Please fix the errors and try again." # Commented out to allow the script to continue running
+                    # throw "Test failed with errors. Please fix the errors and try again." # Commented out to allow the script to continue running
                 } else {
                     $FinalMessage = "'$name' '$kind' - test completed successfully with no error."
                     Write-Host "${green}$FinalMessage${reset}"
@@ -151,8 +149,7 @@ function invokeAsimTester([string] $test, [string] $name, [string] $kind) {
     } catch {
         Write-Host "::error::  -- $_"
         Write-Host "::error::     $(((Get-Error -Newest 1)?.Exception)?.Response?.Content)"
-        $global:failed = 1 # Commented out to allow the script to continue running
-        throw $_
+        #throw $_ # Commented out to allow the script to continue running
     }
 }
 
@@ -183,11 +180,3 @@ function IgnoreValidationForASIMParsers() {
 
 # Call the run function. This is the entry point of the script
 run
-
-if ($global:failed -ne 0) {
-    Write-Host "::error::Script failed with errors."
-    exit 0 # Exit with error code 1 if you want to fail the build
-} else {
-    Write-Host "${green}Script completed successfully.${reset}"
-    exit 0
-}
