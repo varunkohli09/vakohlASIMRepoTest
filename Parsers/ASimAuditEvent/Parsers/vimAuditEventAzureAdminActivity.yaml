@@ -114,7 +114,7 @@ ParserQuery: |
         "Cancel","","Failure","Cancelled"
     ];
     AzureActivity 
-    | where not(disabled)
+    //| where not(disabled)
     | where
         (isnull(starttime) or TimeGenerated >= starttime) 
         and (isnull(endtime) or TimeGenerated <= endtime)
