@@ -22,7 +22,7 @@ SCHEMA_INFO = [
     {"SchemaName": "ProcessEvent", "SchemaVersion": "0.1.4", "SchemaTitle":"ASIM Process Schema","SchemaLink": "https://aka.ms/ASimProcessEventDoc"},
     {"SchemaName": "RegistryEvent", "SchemaVersion": "0.1.2", "SchemaTitle":"ASIM Registry Schema","SchemaLink": "https://aka.ms/ASimRegistryEventDoc"},
     {"SchemaName": "UserManagement", "SchemaVersion": "0.1.1", "SchemaTitle":"ASIM User Management Schema","SchemaLink": "https://aka.ms/ASimUserManagementDoc"},
-    {"SchemaName": "WebSession", "SchemaVersion": "0.2.6", "SchemaTitle":"ASIM Web Session Schema","SchemaLink": "https://aka.ms/ASimUserManagementDoc"}
+    {"SchemaName": "WebSession", "SchemaVersion": "0.2.6", "SchemaTitle":"ASIM Web Session Schema","SchemaLink": "https://aka.ms/ASimWebSessionDoc"}
     # Add more schemas as needed
 ]
 
@@ -47,10 +47,12 @@ def run():
         if not schema_name or parser.endswith(f'ASim{schema_name}.yaml'):
             continue
         asim_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/{parser}'
+        print(asim_parser_url) # uncomment for debugging
         asim_union_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/Parsers/ASim{schema_name}/Parsers/ASim{schema_name}.yaml'
+        print(asim_union_parser_url) # uncomment for debugging
         asim_parser = read_github_yaml(asim_parser_url)
         asim_union_parser = read_github_yaml(asim_union_parser_url)
-
+        print(asim_parser.get('EquivalentBuiltInParser')) # uncomment for debugging
         print_test_header(asim_parser.get('EquivalentBuiltInParser'))
         results = extract_and_check_properties(asim_parser, asim_union_parser, "ASim", asim_parser_url, sample_data_url)
         print_results_table(results)
