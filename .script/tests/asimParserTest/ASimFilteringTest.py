@@ -755,14 +755,20 @@ all_schemas_parameters = {
         "object_has_any" : "Object",
         "operation_has_any" : "Operation",
         "srcipaddr_has_any_prefix" : "SrcIpAddr",
-        "starttime" : "EventStartTime",
+        "starttime" : "EventStartTime"
     },
     "Authentication" : 
     {
         "disabled" : "",
+        "eventresult" : "EventResult",
+        "eventresultdetails_in" : "EventResultDetails",
+        "eventtype_in" : "EventType",
         "endtime" : "EventEndTime",
+        "srchostname_has_any" : "SrcHostname",
+        "srcipaddr_has_any_prefix" : "SrcIpAddr",
         "starttime" : "EventStartTime",
-        "targetusername_has" : "TargetUsername"
+        "targetappname_has_any" : "TargetAppName",
+        "username_has_any" : "User"
     },
     "DhcpEvent" :
     {
