@@ -75,7 +75,7 @@ ParserQuery: |
         "Cancel","","Failure","Cancelled"
     ];
     AzureActivity 
-    | where not(disabled)
+    //| where not(disabled)
     | where CategoryValue == "Administrative"
     | project-away HTTPRequest, Level, SourceSystem, EventSubmissionTimestamp, TenantId, OperationId, Hierarchy, Category, ResourceId, ResourceProvider, Resource
     | project-rename 

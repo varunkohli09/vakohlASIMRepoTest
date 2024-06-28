@@ -16,7 +16,9 @@ import csv
 DUMMY_VALUE = "\'!not_REAL_vAlUe\'"
 MAX_FILTERING_PARAMETERS = 2
 # Workspace ID for the Log Analytics workspace where the ASim filtering tests will be performed.
-WORKSPACE_ID = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
+#WORKSPACE_ID = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
+# CyberSOC
+WORKSPACE_ID = "8ecf8077-cf51-4820-aadd-14040956f35d"
 # Timespan for the parser query
 TIME_SPAN_IN_DAYS = 7
 
@@ -42,8 +44,8 @@ start_time = end_time - timedelta(days = TIME_SPAN_IN_DAYS)
 
 def attempt_to_connect():
     try:
-            credential = DefaultAzureCredential()
-            # credential = InteractiveBrowserCredential() # Uncomment this line if you want to use the interactive browser credential for testing purposes
+            # credential = DefaultAzureCredential()
+            credential = InteractiveBrowserCredential() # Uncomment this line if you want to use the interactive browser credential for testing purposes
             client = LogsQueryClient(credential)
             empty_query = ""
             response = client.query_workspace(
