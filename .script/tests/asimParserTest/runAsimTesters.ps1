@@ -77,7 +77,7 @@ function testSchema([string] $ParserFile) {
     $Schema = (Split-Path -Path $ParserFile -Parent | Split-Path -Parent)
     if ($parsersAsObject.Parsers) {
         Write-Host "***************************************************"
-        Write-Host "${yellow}The parser '$functionName' is a main parser, ignoring it${reset}"
+        Write-Host "${yellow}The parser '$functionName' is a union parser, ignoring it from 'Schema' and 'Data' testing.${reset}"
         Write-Host "***************************************************"
     } else {
         testParser ([Parser]::new($functionName, $parsersAsObject.ParserQuery, $Schema.Replace("Parsers/ASim", ""), $parsersAsObject.ParserParams))
@@ -90,14 +90,14 @@ function testParser([Parser] $parser) {
     $letStatementName = "generated$($parser.Name)"
     $parserAsletStatement = "let $letStatementName = ($(getParameters($parser.Parameters))) { $($parser.OriginalQuery) };"
     
-    Write-Host "${yellow}Running ASIM 'Schema' tests for '$($parser.Name)' parser${reset}"
+    Write-Host "${yellow}Running 'Schema' test for '$($parser.Name)' parser${reset}"
     Write-Host "***************************************************"
     $schemaTest = "$parserAsletStatement`r`n$letStatementName | getschema | invoke ASimSchemaTester('$($parser.Schema)')"
-    Write-Host "${yellow}Schema name is: $($parser.Schema)${reset}"
+    Write-Host "${yellow}Schema name : $($parser.Schema)${reset}"
     invokeAsimTester $schemaTest $parser.Name "schema"
     
     Write-Host "***************************************************"
-    Write-Host "${yellow}Running ASIM 'Data' tests for '$($parser.Name)' parser${reset}"
+    Write-Host "${yellow}Running 'Data' tests for '$($parser.Name)' parser${reset}"
     $dataTest = "$parserAsletStatement`r`n$letStatementName | invoke ASimDataTester('$($parser.Schema)')"
     invokeAsimTester $dataTest $parser.Name "data"
     Write-Host "***************************************************"
@@ -138,6 +138,7 @@ function invokeAsimTester([string] $test, [string] $name, [string] $kind) {
                 elseif ($Errorcount -gt 0) {
                     $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
                     Write-Host "::error:: $FinalMessage"
+                    exit 1
                     # $global:failed = 1 # Commented out to allow the script to continue running
                     # throw "Test failed with errors. Please fix the errors and try again." # Commented out to allow the script to continue running
                 } else {
