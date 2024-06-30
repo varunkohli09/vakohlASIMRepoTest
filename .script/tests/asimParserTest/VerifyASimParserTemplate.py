@@ -71,6 +71,9 @@ def run():
         print(f'Constructed union parser raw url:  {asim_union_parser_url}') # uncomment for debugging
         asim_parser = read_github_yaml(asim_parser_url)
         asim_union_parser = read_github_yaml(asim_union_parser_url)
+        # Both ASim and union parser files should be present to proceed with the tests
+        if not (check_parser_found(asim_parser, asim_parser_url) and check_parser_found(asim_union_parser, asim_union_parser_url)):
+            continue
         print_test_header(asim_parser.get('EquivalentBuiltInParser'))
         results = extract_and_check_properties(asim_parser, asim_union_parser, "ASim", asim_parser_url, sample_data_url)
         print_results_table(results)
@@ -78,6 +81,9 @@ def run():
         check_test_failures(results, asim_parser)
 
         vim_parser, vim_union_parser = get_vim_parsers(asim_parser_url, asim_union_parser_url, asim_parser)
+        # Both vim and union parser files should be present to proceed with the tests
+        if not (check_parser_found(vim_parser, asim_parser_url) and check_parser_found(vim_union_parser, asim_union_parser_url)):
+            continue
         print_test_header(vim_parser.get('EquivalentBuiltInParser'))
         results = extract_and_check_properties(vim_parser, vim_union_parser, "vim", asim_parser_url, sample_data_url)
         print_results_table(results)
@@ -320,6 +326,13 @@ def check_test_failures(results, parser):
     else:
         failed = 1
         # exit(1)
+
+def check_parser_found(asim_parser,parser_url):
+    if asim_parser is None:
+        print(f"::error::Parser file not found. Please check the URL and try again: {parser_url}")
+        # exit(1) # Uncomment this line to fail the workflow if parser file not found.
+    else:
+        return True
 
 def get_vim_parsers(asim_parser_url, asim_union_parser_url, asim_parser):
     # Split the URL into parts
