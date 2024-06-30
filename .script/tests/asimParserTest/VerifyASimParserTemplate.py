@@ -50,9 +50,21 @@ def run():
         print(file)
     
     for parser in parser_yaml_files:
+        
         schema_name = extract_schema_name(parser)
-        if not schema_name or parser.endswith(f'ASim{schema_name}.yaml'):
+        if not schema_name or parser.endswith(f'ASim{schema_name}.yaml') or parser.endswith(f'im{schema_name}.yaml'):
+            print(f"Skipping '{parser}' as this is a union parser file. Union parser files are not tested.")
             continue
+        # Skip vim parser file if the corresponding ASim parser file is not present
+        elif parser.split('/')[-1].startswith('vim'):
+             # Check if ASim parser file is present in the changed files list. If not present, replace vim with ASim.
+             # This could the case where only vim parser file is being updated and ASim parser file is not updated.
+             # But we should be testing both ASim and vim parser files.
+             if parser.replace('vim', 'ASim') not in parser_yaml_files:
+                 parser = parser.replace('vim', 'ASim')
+             else :
+                 # Skip the vim parser file as the corresponding ASim parser file is present and vim files will be tested with ASim files in upcoming steps.
+                 continue 
         asim_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/{parser}'
         print(f'Constructed parser raw url:  {asim_parser_url}') # uncomment for debugging
         asim_union_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/Parsers/ASim{schema_name}/Parsers/ASim{schema_name}.yaml'
@@ -257,7 +269,8 @@ def extract_and_check_properties(Parser_file, Union_Parser__file, FileType, Pars
     return results
 
 def filter_yaml_files(modified_files):
-    return [line for line in modified_files if line.split('/')[-1].startswith('ASim') and line.endswith('.yaml')]
+    # Take only the YAML files
+    return [line for line in modified_files if line.endswith('.yaml')]
 
 def get_modified_files(current_directory):
     cmd = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
