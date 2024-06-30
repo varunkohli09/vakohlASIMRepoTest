@@ -47,9 +47,9 @@ def run():
         if not schema_name or parser.endswith(f'ASim{schema_name}.yaml'):
             continue
         asim_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/{parser}'
-        print("Constructed parser raw url:  {asim_parser_url}") # uncomment for debugging
+        print(f'Constructed parser raw url:  {asim_parser_url}') # uncomment for debugging
         asim_union_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/Parsers/ASim{schema_name}/Parsers/ASim{schema_name}.yaml'
-        print("Constructed union parser raw url:  {asim_union_parser_url}") # uncomment for debugging
+        print(f'Constructed union parser raw url:  {asim_union_parser_url}') # uncomment for debugging
         asim_parser = read_github_yaml(asim_parser_url)
         asim_union_parser = read_github_yaml(asim_union_parser_url)
         print_test_header(asim_parser.get('EquivalentBuiltInParser'))
