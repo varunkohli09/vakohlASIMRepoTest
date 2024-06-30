@@ -293,7 +293,10 @@ def extract_schema_name(parser):
     return match.group(1) if match else None
 
 def read_github_yaml(url):
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except Exception as e:
+        print(f"An error occurred while trying to get content of YAML file located at {url}: {e}")
     return yaml.safe_load(response.text) if response.status_code == 200 else None
 
 def print_test_header(parser_name):
