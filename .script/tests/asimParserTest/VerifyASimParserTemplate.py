@@ -264,7 +264,7 @@ def extract_and_check_properties(Parser_file, Union_Parser__file, FileType, Pars
     
     if FileType == "ASim":
         # construct filename
-        SampleDataFile = f'{event_vendor}_{event_product}_{FileType}{schema}_IngestedLogs.csv'
+        SampleDataFile = f'{event_vendor}_{event_product}_{schema}_IngestedLogs.csv'
         SampleDataUrl = ASIMSampleDataURL+SampleDataFile
         # check if file exists
         response = requests.get(SampleDataUrl)
