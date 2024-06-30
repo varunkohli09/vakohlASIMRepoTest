@@ -45,15 +45,15 @@ def run():
     commit_number = get_current_commit_number()
     sample_data_url = f'{SENTINEL_REPO_URL}/{commit_number}/{SAMPLE_DATA_PATH}'
     parser_yaml_files = filter_yaml_files(modified_files)
-    print("Following files were found to be modified:")
+    print(f"{GREEN}Following files were found to be modified:{RESET}")
     for file in parser_yaml_files:
-        print(file)
+        print(f"{YELLOW}{file}{RESET}")
     
     for parser in parser_yaml_files:
         
         schema_name = extract_schema_name(parser)
         if not schema_name or parser.endswith(f'ASim{schema_name}.yaml') or parser.endswith(f'im{schema_name}.yaml'):
-            print(f"Skipping '{parser}' as this is a union parser file. Union parser files are not tested.")
+            print(f"{YELLOW}Skipping '{parser}' as this is a union parser file. Union parser files are not tested.{RESET}")
             continue
         # Skip vim parser file if the corresponding ASim parser file is not present
         elif parser.split('/')[-1].startswith('vim'):
@@ -66,9 +66,9 @@ def run():
                  # Skip the vim parser file as the corresponding ASim parser file is present and vim files will be tested with ASim files in upcoming steps.
                  continue 
         asim_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/{parser}'
-        print(f'Constructed parser raw url:  {asim_parser_url}') # uncomment for debugging
+        print(f'{YELLOW}Constructed parser raw url:  {asim_parser_url}{RESET}') # uncomment for debugging
         asim_union_parser_url = f'{SENTINEL_REPO_URL}/{commit_number}/Parsers/ASim{schema_name}/Parsers/ASim{schema_name}.yaml'
-        print(f'Constructed union parser raw url:  {asim_union_parser_url}') # uncomment for debugging
+        print(f'{YELLOW}Constructed union parser raw url:  {asim_union_parser_url}{RESET}') # uncomment for debugging
         asim_parser = read_github_yaml(asim_parser_url)
         asim_union_parser = read_github_yaml(asim_union_parser_url)
         # Both ASim and union parser files should be present to proceed with the tests
@@ -283,7 +283,7 @@ def get_modified_files(current_directory):
     try:
         return subprocess.check_output(cmd, shell=True).decode().split("\n")
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred while executing the command: {e}")
+        print(f"::error::Error occurred while executing the command: {e}")
         return []
 
 def get_current_commit_number():
@@ -291,7 +291,7 @@ def get_current_commit_number():
     try:
         return subprocess.check_output(cmd, shell=True, text=True).strip()
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred while executing the command: {e}")
+        print(f"::error::Error occurred while executing the command: {e}")
         return None
 
 def extract_schema_name(parser):
@@ -302,12 +302,12 @@ def read_github_yaml(url):
     try:
         response = requests.get(url)
     except Exception as e:
-        print(f"An error occurred while trying to get content of YAML file located at {url}: {e}")
+        print(f"::error::An error occurred while trying to get content of YAML file located at {url}: {e}")
     return yaml.safe_load(response.text) if response.status_code == 200 else None
 
 def print_test_header(parser_name):
     print("***********************************")
-    print(f"Performing tests for Parser: {parser_name}")
+    print(f"{GREEN}Performing tests for Parser: {parser_name}{RESET}")
     print("***********************************")
 
 def print_results_table(results):
@@ -319,12 +319,8 @@ def check_test_failures(results, parser):
         print("::error::Some tests failed for Parser. Please check the results above.")
     exclusion_list = read_exclusion_list_from_csv()
     if parser.get('EquivalentBuiltInParser') in exclusion_list:
-        print(f"::warning::{parser.get('EquivalentBuiltInParser')} is in the exclusion list. Ignoring error(s).")
-        print(f"{YELLOW}The parser {parser.get('EquivalentBuiltInParser')} is listed in the exclusions file. Therefore, this workflow run will not fail because of it. To allow this parser to cause the workflow to fail, please remove its name from the exclusions list file located at: {parser_exclusion_file_path}{RESET}")
-        global failed
-        failed = 0
-    else:
-        failed = 1
+        print(f"::warning::The parser {parser.get('EquivalentBuiltInParser')} is listed in the exclusions file. Therefore, this workflow run will not fail because of it. To allow this parser to cause the workflow to fail, please remove its name from the exclusions list file located at: {parser_exclusion_file_path}")
+    #else:
         # exit(1)
 
 def check_parser_found(asim_parser,parser_url):
