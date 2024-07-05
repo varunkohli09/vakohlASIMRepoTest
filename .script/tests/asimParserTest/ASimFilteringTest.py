@@ -343,7 +343,8 @@ class FilteringTest(unittest.TestCase):
         elif  column_name_in_table not in columns_in_answer:
             return
         elif (param_type == "datetime"):
-            pass #TODO add test for datetime
+            #pass #TODO add test for datetime
+            self.datetime_test(param, query_definition, column_name_in_table)
         elif (param_type == "dynamic"):
             self.dynamic_test(param, query_definition, column_name_in_table)
         else:
@@ -372,6 +373,23 @@ class FilteringTest(unittest.TestCase):
         if len(missing_fields) != 0:
             self.fail(f"The following fields are missing in the file:\n{missing_fields}")
     
+    def datetime_test(self, param, query_definition, column_name_in_table):
+        param_name = param['Name']
+        # Get count of rows without filtering
+        no_filter_query = query_definition + f"query()\n"
+        no_filter_response = self.send_query(no_filter_query)
+        num_of_rows_when_no_filters_in_query = len(no_filter_response.tables[0].rows)
+        self.assertNotEqual(len(no_filter_response.tables[0].rows) , 0 , f"No data for parameter:{param_name}")
+        datetime_mid_point_query = query_definition + f"query() | summarize max_TimeGenerated = max(TimeGenerated), min_TimeGenerated = min(TimeGenerated) \n | extend timeSpan = datetime_diff('second', max_TimeGenerated, min_TimeGenerated) \n | project mid_point = datetime_add('second', timeSpan / 2, min_TimeGenerated)"
+        datetime_mid_point_response = self.send_query(datetime_mid_point_query)
+        mid_point_datetime_value = datetime_mid_point_response.tables[0].rows[0][0]
+        datetime_mid_point_value = f"datetime({mid_point_datetime_value})"
+        # Get count of rows after applying filtering
+        query_with_filter = query_definition + f"query({param_name}={datetime_mid_point_value})\n"
+        filtered_response = self.send_query(query_with_filter)
+        self.assertNotEqual(len(filtered_response.tables[0].rows) , 0 , f"No data for parameter:{param_name}")
+        num_of_rows_with_filter_in_query = len(filtered_response.tables[0].rows)
+        self.assertLess(num_of_rows_with_filter_in_query, num_of_rows_when_no_filters_in_query,  f"Parameter: {param_name} - Expected to have less results after filtering. Filtered by value: {datetime_mid_point_value}")
 
     def scalar_test(self, param, query_definition, column_name_in_table):
         """
