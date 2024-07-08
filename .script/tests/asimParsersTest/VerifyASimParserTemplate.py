@@ -12,7 +12,7 @@ from tabulate import tabulate
 #SENTINEL_REPO_URL = f'https://raw.githubusercontent.com/Azure/Azure-Sentinel'
 SENTINEL_REPO_URL = f'https://raw.githubusercontent.com/vakohl/vakohlASIMRepoTest'
 SAMPLE_DATA_PATH = '/Sample%20Data/ASIM/'
-parser_exclusion_file_path = '.script/tests/asimParserTest/ExclusionListForASimTests.csv'
+parser_exclusion_file_path = '.script/tests/asimParsersTest/ExclusionListForASimTests.csv'
 SCHEMA_INFO = [
     {"SchemaName": "AuditEvent", "SchemaVersion": "0.1", "SchemaTitle":"ASIM Audit Event Schema", "SchemaLink": "https://aka.ms/ASimAuditEventDoc"},
     {"SchemaName": "Authentication", "SchemaVersion": "0.1.3","SchemaTitle":"ASIM Authentication Schema","SchemaLink": "https://aka.ms/ASimAuthenticationDoc"},
