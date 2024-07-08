@@ -2,7 +2,7 @@
 # The script runs ASIM Schema and Data testers on the "eco-connector-test" workspace.
 name: Run ASIM tests on "ASIM-SchemaDataTester-GithubShared" workspace
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, reopened, synchronize, labeled]
     paths:
     - 'Parsers/ASimDns/Parsers/**'
@@ -65,7 +65,17 @@ jobs:
         uses: azure/powershell@v2
         with:
           inlineScript: |
-            & ".script/tests/asimParserTest/runAsimTesters.ps1"
+            $filePath = ".script/tests/asimParsersTest/runAsimTesters.ps1"
+            $url = "https://raw.githubusercontent.com/vakohl/vakohlASIMRepoTest/main/.script/tests/asimParsersTest/runAsimTesters.ps1"
+            # Check if file exists and delete if it does
+            if (Test-Path $filePath) {
+              Remove-Item $filePath -Force
+            }
+            # Download the file
+            Write-Host "Downloading script from the master: $url"
+            Invoke-WebRequest -Uri $url -OutFile $filePath
+            # Execute the script
+            & $filePath
           azPSVersion: "latest"
           errorActionPreference: continue
           failOnStandardError: false
@@ -106,7 +116,17 @@ jobs:
               pip install tabulate
       - name: Run Python script
         run: |
-              python .script/tests/asimParserTest/VerifyASimParserTemplate.py
+              filePath=".script/tests/asimParsersTest/VerifyASimParserTemplate.py"
+              url="https://raw.githubusercontent.com/vakohl/vakohlASIMRepoTest/main/.script/tests/asimParsersTest/VerifyASimParserTemplate.py" 
+              # Check if file exists and delete if it does
+              if [ -f "$filePath" ]; then
+                rm -f "$filePath"
+              fi
+              # Download the file
+              echo "Downloading script from the master: $url"
+              curl -o "$filePath" "$url"
+              # Execute the script
+              python "$filePath"
   Run-ASim-Parser-Filtering-Tests:
     name: Run ASim Parser Filtering tests
     runs-on: ubuntu-latest
@@ -150,4 +170,14 @@ jobs:
           allow-no-subscriptions: true
       - name: Run Python script
         run: |
-          python .script/tests/asimParserTest/ASimFilteringTest.py
+          filePath=".script/tests/asimParsersTest/ASimFilteringTest.py"
+          url="https://raw.githubusercontent.com/vakohl/vakohlASIMRepoTest/main/.script/tests/asimParsersTest/ASimFilteringTest.py"
+          # Check if file exists and delete if it does
+          if [ -f "$filePath" ]; then
+            rm -f "$filePath"
+          fi
+          # Download the file
+          echo "Downloading script from the master: $url"
+          curl -o "$filePath" "$url"
+          # Execute the script
+          python "$filePath"
