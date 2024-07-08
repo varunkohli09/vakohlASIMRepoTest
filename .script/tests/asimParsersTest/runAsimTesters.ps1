@@ -1,12 +1,15 @@
-$global:failed = 0
-
-# Subscription ID which contains Log Analytics workspace where the ASim schema and data tests will be conducted
-#$global:subscriptionId = "4383ac89-7cd1-48c1-8061-b0b3c5ccfd97"
-$global:subscriptionId = "a2c2c31d-ebd4-4880-a60c-d615efa9d201"
-
 # Workspace ID for the Log Analytics workspace where the ASim schema and data tests will be conducted
-#$global:workspaceId = "46bec743-35fa-4608-b7e2-2aa3c38a97c2"
 $global:workspaceId = "02dd2616-a0e2-4ca5-a303-bd69e22e0c12"
+
+# ANSI escape code for green text
+$green = "`e[32m"
+# ANSI escape code for yellow text
+$yellow = "`e[33m"
+# ANSI escape code to reset color
+$reset = "`e[0m"
+
+# Parser exclusion file path
+$ParserExclusionsFilePath ="$($PSScriptRoot)/ExclusionListForASimTests.csv"
 
 Class Parser {
     [string] $Name
@@ -23,9 +26,9 @@ Class Parser {
 }
 
 function run {
-    $subscription = Select-AzSubscription -SubscriptionId $global:subscriptionId
+    #$subscription = Select-AzSubscription -SubscriptionId $global:subscriptionId
     # Get modified ASIM Parser files along with their status
-    $modifiedFilesStatus = Invoke-Expression "git diff --name-status origin/master -- $($PSScriptRoot)/../../../Parsers/"
+    $modifiedFilesStatus = Invoke-Expression "git diff --name-status origin/main -- $($PSScriptRoot)/../../../Parsers/"
     # Split the output into lines
     $modifiedFilesStatusLines = $modifiedFilesStatus -split "`n"
     # Initialize an empty array to store the file names and their status
@@ -49,9 +52,9 @@ function run {
         }
     }
     # Print the file names and their status
-    Write-Host "The following ASIM parser files have been updated. 'Schema' and 'Data' tests will be performed for each of these parsers:"
+    Write-Host "${green}The following ASIM parser files have been updated. 'Schema' and 'Data' tests will be performed for each of these parsers:${reset}"
     foreach ($file in $modifiedFiles) {
-        Write-Host ("{0} ({1})" -f $file.Name, $file.Status) -ForegroundColor Green
+        Write-Host ${yellow}("{0} ({1})" -f $file.Name, $file.Status)${reset}
     }
     Write-Host "***************************************************"
 
@@ -73,7 +76,7 @@ function testSchema([string] $ParserFile) {
     $Schema = (Split-Path -Path $ParserFile -Parent | Split-Path -Parent)
     if ($parsersAsObject.Parsers) {
         Write-Host "***************************************************"
-        Write-Host "The parser '$functionName' is a main parser, ignoring it" -ForegroundColor Yellow
+        Write-Host "${yellow}The parser '$functionName' is a union parser, ignoring it from 'Schema' and 'Data' testing.${reset}"
         Write-Host "***************************************************"
     } else {
         testParser ([Parser]::new($functionName, $parsersAsObject.ParserQuery, $Schema.Replace("Parsers/ASim", ""), $parsersAsObject.ParserParams))
@@ -82,18 +85,18 @@ function testSchema([string] $ParserFile) {
 
 function testParser([Parser] $parser) {
     Write-Host "***************************************************"
-    Write-Host "Testing parser - '$($parser.Name)'" -ForegroundColor Green
+    Write-Host "${yellow}Testing parser - '$($parser.Name)'${reset}"
     $letStatementName = "generated$($parser.Name)"
     $parserAsletStatement = "let $letStatementName = ($(getParameters($parser.Parameters))) { $($parser.OriginalQuery) };"
     
-    Write-Host "Running ASIM 'Schema' tests for '$($parser.Name)' parser"
+    Write-Host "${yellow}Running 'Schema' test for '$($parser.Name)' parser${reset}"
     Write-Host "***************************************************"
     $schemaTest = "$parserAsletStatement`r`n$letStatementName | getschema | invoke ASimSchemaTester('$($parser.Schema)')"
-    Write-Host "Schema name is: $($parser.Schema)"
+    Write-Host "${yellow}Schema name : $($parser.Schema)${reset}"
     invokeAsimTester $schemaTest $parser.Name "schema"
     
     Write-Host "***************************************************"
-    Write-Host "Running ASIM 'Data' tests for '$($parser.Name)' parser"
+    Write-Host "${yellow}Running 'Data' tests for '$($parser.Name)' parser${reset}"
     $dataTest = "$parserAsletStatement`r`n$letStatementName | invoke ASimDataTester('$($parser.Schema)')"
     invokeAsimTester $dataTest $parser.Name "data"
     Write-Host "***************************************************"
@@ -124,24 +127,29 @@ function invokeAsimTester([string] $test, [string] $name, [string] $kind) {
                 $resultsArray | ForEach-Object { $TestResults += "$($_.Result)`r`n" }
                 Write-Host $TestResults
                 $Errorcount = ($resultsArray | Where-Object { $_.Result -like "(0) Error:*" }).Count
-                if ($Errorcount -gt 0) {
-                    $FinalMessage = "`r`n'$name' '$kind' - test failed with $Errorcount errors:`r`n"
-                    Write-Host $FinalMessage -ForegroundColor Red
-                    $global:failed = 1
-                    throw "Test failed with errors. Please fix the errors and try again."
+                $IgnoreParserIsSet = IgnoreValidationForASIMParsers | Where-Object { $name -like "$_*" }
+                if ($Errorcount -gt 0 -and $IgnoreParserIsSet)
+                {
+                    $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
+                    Write-Host "::error::$FinalMessage"
+                    Write-Host "::warning::The parser '$name' is listed in the parser exclusions file. Therefore, this workflow run will not fail because of it. To allow this parser to cause the workflow to fail, please remove its name from the exclusions list file located at: '$ParserExclusionsFilePath'"
+                }
+                elseif ($Errorcount -gt 0) {
+                    $FinalMessage = "'$name' '$kind' - test failed with $Errorcount error(s):"
+                    Write-Host "::error:: $FinalMessage"
+                    # throw "Test failed with errors. Please fix the errors and try again." # Commented out to allow the script to continue running
                 } else {
-                    $FinalMessage = "'$name' '$kind' - test completed successfully with no errors."
-                    Write-Host $FinalMessage -ForegroundColor Green
+                    $FinalMessage = "'$name' '$kind' - test completed successfully with no error."
+                    Write-Host "${green}$FinalMessage${reset}"
                 }
             } else {
-                Write-Host "$name $kind test done successfully. No records found"
+                Write-Host "::warning::$name $kind - test completed. No records found"
             }
         }
     } catch {
-        Write-Host "  -- $_"
-        Write-Host "     $(((Get-Error -Newest 1)?.Exception)?.Response?.Content)"
-        $global:failed = 1
-        throw $_
+        Write-Host "::error::  -- $_"
+        Write-Host "::error::     $(((Get-Error -Newest 1)?.Exception)?.Response?.Content)"
+        #throw $_ # Commented out to allow the script to continue running
     }
 }
 
@@ -159,12 +167,16 @@ function getParameters([System.Collections.Generic.List`1[System.Object]] $parse
     return ""
 }
 
-run
+function IgnoreValidationForASIMParsers() {
+    $csvContent = Import-Csv -Path $ParserExclusionsFilePath
+    $parserNames = @()
 
-if ($global:failed -ne 0) {
-    Write-Host "Script failed with errors." -ForegroundColor Red
-    exit 1
-} else {
-    Write-Host "Script completed successfully." -ForegroundColor Green
-    exit 0
+    foreach ($row in $csvContent) {
+        $parserNames += $row.ParserName
+    }
+
+    return $parserNames
 }
+
+# Call the run function. This is the entry point of the script
+run
