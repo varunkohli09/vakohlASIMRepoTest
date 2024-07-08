@@ -230,6 +230,7 @@ def read_exclusion_list_from_csv():
     return exclusion_list
 
 def main():
+    print(f"{YELLOW}--- Running ASim filtering script from PR{RESET}")
     # Get modified ASIM Parser files along with their status
     current_directory = os.path.dirname(os.path.abspath(__file__))
     GetModifiedFiles = f"git diff --name-only origin/main {current_directory}/../../../Parsers/"
