@@ -39,6 +39,7 @@ RED = '\033[91m'
 RESET = '\033[0m'  # Reset to default color
 
 def run():
+    print("This script is execute from PR")
     """Main function to execute the script logic."""
     current_directory = os.path.dirname(os.path.abspath(__file__))
     modified_files = get_modified_files(current_directory)
